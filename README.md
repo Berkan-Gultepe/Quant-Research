@@ -1,6 +1,8 @@
 # Quant Research
 
-Systematic quantitative trading research — strategy development, backtesting, and rigorous statistical validation.
+Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — focusing on momentum, risk engineering, and cross-asset dynamics.
+
+Background in finance with a focus on systematic approaches. Currently developing a research portfolio of backtested strategies with rigorous statistical validation standards (IS/OOS split, significance testing, parameter robustness).
 
 ---
 
