@@ -111,11 +111,32 @@ $1.00 round-trip per trade.
 
 ---
 
+## Results — Without Costs
+
+### Equity Curve (WR 49.1% | PF 1.15)
+![Equity Curve no costs](plots/01_equity_curve_no_costs.png)
+
+### Parameter Sensitivity — All 20 combinations profitable
+![Heatmap no costs](plots/02_heatmap_no_costs.png)
+
+---
+
+## Results — With Slippage ($0.05/share) + Commission ($1.00/trade)
+
+### Equity Curve (WR 48.1% | PF 1.03) — edge nearly gone
+![Equity Curve with costs](plots/03_equity_curve_with_costs.png)
+
+### Parameter Sensitivity — Several combinations now unprofitable
+![Heatmap with costs](plots/04_heatmap_with_costs.png)
+
+---
+
 ## Files
 
 | File | Description |
 |------|-------------|
 | `orb_backtest.py` | Full backtest with slippage, commission, Monte Carlo, Walk-Forward, RR comparison |
+| `plots/` | Equity curves and parameter sensitivity heatmaps (with and without costs) |
 
 ---
 
