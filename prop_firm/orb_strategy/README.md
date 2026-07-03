@@ -113,19 +113,17 @@ $1.00 round-trip per trade.
 
 ## Results — Without Costs
 
-**Equity Curve (WR 49.1% | PF 1.15) · Parameter Sensitivity — All 20 combinations profitable**
-
-<img src="plots/01_equity_curve_no_costs.png" width="600"/>
-<img src="plots/02_heatmap_no_costs.png" width="600"/>
+| Equity Curve (WR 49.1% · PF 1.15) | Parameter Sensitivity |
+|---|---|
+| <img src="plots/01_equity_curve_no_costs.png" width="380"/> | <img src="plots/02_heatmap_no_costs.png" width="380"/> |
 
 ---
 
 ## Results — With Slippage ($0.05/share) + Commission ($1.00/trade)
 
-**Equity Curve (WR 48.1% | PF 1.03) — edge nearly gone · Several combinations now unprofitable**
-
-<img src="plots/03_equity_curve_with_costs.png" width="600"/>
-<img src="plots/04_heatmap_with_costs.png" width="600"/>
+| Equity Curve (WR 48.1% · PF 1.03) | Parameter Sensitivity |
+|---|---|
+| <img src="plots/03_equity_curve_with_costs.png" width="380"/> | <img src="plots/04_heatmap_with_costs.png" width="380"/> |
 
 ---
 
