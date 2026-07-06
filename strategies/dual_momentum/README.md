@@ -31,6 +31,8 @@ Signal uses `pct_change(12).shift(1)` on monthly closes — no look-ahead (verif
 | **Max Drawdown** | **−33.7%** | **−47.2%** |
 | Calmar | 0.33 | 0.29 |
 | Trading Days | 4,531 | 4,531 |
+<img width="558" height="186" alt="image" src="https://github.com/user-attachments/assets/066b8289-4e6d-4ad5-875c-a6b32f3f73fc" />
+
 
 **Positions:** SPY 143 months · EFA 40 · AGG 35 (of 218)
 **IS/OOS:** In-Sample Sharpe 0.61 (2007–2021) · Out-of-Sample 0.80 (2021–2026) — OOS/IS ratio 1.30
