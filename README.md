@@ -8,6 +8,17 @@ Background in finance with a focus on systematic approaches. Currently developin
 
 ---
 
+## Strategies in this repo
+
+| Strategy | Sharpe | Status | Honest verdict |
+|---|---|---|---|
+| TSMOM (below) | ~~1.86~~ 0.29* | ⚠️ Re-validation | Look-ahead artifact — see post-mortem |
+| [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
+
+*\*Honest value after bug fix (5-ETF universe). Re-validation with broader universe in progress.*
+
+---
+
 ## Strategy: Time-Series Momentum (TSMOM)
 
 **Paper:** Moskowitz, T., Ooi, Y. H., & Pedersen, L. H. (2012). *Time Series Momentum.* Journal of Financial Economics, 104(2), 228–250.  
