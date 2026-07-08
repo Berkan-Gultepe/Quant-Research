@@ -12,7 +12,7 @@ Background in finance with a focus on systematic approaches. Currently developin
 
 | Strategy | Sharpe | Status | Honest verdict |
 |---|---|---|---|
-| TSMOM (below) | ~~1.86~~ 0.29* | ⚠️ Re-validation | Look-ahead artifact — see post-mortem |
+| TSMOM (below) | ~~1.86~~ → v2: 0.76 | ⚠️ Re-validation (OOS & costs pending) | Bug fixed, honest 24-asset run passed first hurdle (t = 3.83) — see post-mortem update |
 | [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
 
 *\*Honest value after bug fix (5-ETF universe). Re-validation with broader universe in progress.*
@@ -78,6 +78,20 @@ The original multiplied today's position by *yesterday's* return. Since the mome
 1. A single honest significance test on a clean rebuild found a bug that had survived IS/OOS splits, a 4×4 parameter grid and a "fully validated" label. Validation built on top of broken code validates the bug.
 2. Sharpe 1.86 on 5 ETFs with vanilla momentum should have triggered suspicion — Moskowitz et al. (2012) report ~1.0 gross on 58 futures markets. When your simple version beats the paper by 80%, the most likely explanation is a bug, not genius.
 3. Re-validation (corrected code, broader universe, transaction costs) is in progress. Results will be published here — whatever they are.
+
+**Update (2026-07-08) — first honest run.** TSMOM v2 on a 24-asset cross-asset universe (equities, bonds, commodities, FX; growing universe from 2001, corrected timing logic):
+
+| Metric | TSMOM v2 (honest) |
+|---|---|
+| Sharpe | 0.76 |
+| t-stat | 3.83 — above the Harvey/Liu/Zhu 3.0 hurdle |
+| p-value | 1.3×10⁻⁴ |
+| 95%-CI (annual return) | [+2.9%, +8.9%] |
+| Max Drawdown | −16.5% |
+
+Consistent with the literature: breadth is momentum's fuel (5 ETFs → Sharpe 0.29, 24 assets → 0.76 — still below Moskowitz's ~1.0 on 58 futures markets, as it should be). **Preliminary:** out-of-sample split, parameter sensitivity and transaction costs still pending before any paper-trading decision.
+
+**Audit side-finding:** The bug hunt extended to all strategies. The cross-sectional momentum implementation turned out to trade with *inverted signs* (buying losers, shorting winners — contradicting its own documented intent). Its historical results are void; a clean re-test on a survivorship-free universe is queued.
 
 ---
 
