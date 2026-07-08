@@ -32,6 +32,7 @@ Signal uses `pct_change(12).shift(1)` on monthly closes — no look-ahead (verif
 | Calmar | 0.33 | 0.29 |
 | Trading Days | 4,531 | 4,531 |
 
+
 **Positions:** SPY 143 months · EFA 40 · AGG 35 (of 218)
 **IS/OOS:** In-Sample Sharpe 0.61 (2007–2021) · Out-of-Sample 0.80 (2021–2026) — OOS/IS ratio 1.30
 **Alpha/Beta vs. SPY:** Beta 0.63 · Alpha 2.39% p.a. (p < 0.001) · R² 0.57
