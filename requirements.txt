@@ -1,0 +1,9 @@
+# Quant-Research — dependencies
+# Install:  pip install -r requirements.txt
+numpy
+pandas
+scipy
+matplotlib
+yfinance
+pandas-datareader
+statsmodels
