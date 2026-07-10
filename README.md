@@ -1,205 +1,81 @@
 # Quant Research
 
-Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — focusing on momentum, risk engineering, and cross-asset dynamics.
+Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — momentum, risk engineering, cross-asset dynamics — with an emphasis on **honest validation**: a strategy only ships after it clears significance, out-of-sample, robustness and cost hurdles.
 
-Background in finance with a focus on systematic approaches. Currently developing a research portfolio of backtested strategies with rigorous statistical validation standards (IS/OOS split, significance testing, parameter robustness).
-
-> ⚠️ **Results under revision (2026-07-06).** During statistical re-validation I discovered a look-ahead bug in the TSMOM return calculation. The headline numbers below (Sharpe 1.86, p = 2.2×10⁻¹⁵) are artifacts of that bug — the honest result of the same implementation is **Sharpe 0.29 (t = 1.28, p = 0.20, not significant)**. Full post-mortem below; re-validation with corrected code and a broader asset universe is in progress. I'm leaving the original numbers visible because catching your own bugs — and documenting them — is the job.
+> ⚠️ **Results under revision (2026-07).** During statistical re-validation I found a look-ahead bug in the original TSMOM code that had inflated its Sharpe to 1.86. The honest rebuild (v2) is below. I'm leaving the story visible because catching your own bugs — and documenting them — is the job.
 
 ---
 
-## Strategies in this repo
+## Strategies
 
-| Strategy | Sharpe | Status | Honest verdict |
+| Strategy | Sharpe (gross) | Status | Honest verdict |
 |---|---|---|---|
-| TSMOM (below) | ~~1.86~~ → v2: 0.76 | ⚠️ Re-validation (OOS & costs pending) | Bug fixed, honest 24-asset run passed first hurdle (t = 3.83) — see post-mortem update |
+| [TSMOM v2](strategies/tsmom_v2/) | **0.76** | ✅ Hurdles 1–2 + Monte Carlo passed · costs pending | Real edge gross of costs; robust out-of-sample (IS 0.80 → OOS 0.69) and to parameter/path reshuffling. Not live until it survives transaction costs. |
 | [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
+| [ORB (prop firm)](strategies/orb_prop_firm/) | — | ⚰️ Abandoned | Significant gross (t = 5.43) but the edge died after slippage + commissions (t → 1.45). A cost-discipline lesson, kept on purpose. |
 
-*\*Honest value after bug fix (5-ETF universe). Re-validation with broader universe in progress.*
-
----
-
-## Strategy: Time-Series Momentum (TSMOM)
-
-**Paper:** Moskowitz, T., Ooi, Y. H., & Pedersen, L. H. (2012). *Time Series Momentum.* Journal of Financial Economics, 104(2), 228–250.  
-**Universe:** SPY · GLD · TLT · USO · UUP  
-**Period:** 2000–2026  
-**Rebalancing:** Daily  
-**Signal:** 12-month trailing return (252 trading days)  
-**Position sizing:** Volatility-scaled to 15% annualized target volatility
+Exploratory work, not yet strategies: [alternative data](research/alternative_data/) — COT positioning, credit spreads, yield-curve regime.
 
 ---
 
-## Equity Curve
-<img width="1783" height="1033" alt="tsmom_equity_curve" src="https://github.com/user-attachments/assets/f2b1124a-fdba-4ef3-8205-80ea952b384d" />
+## Validation standards
 
+Every strategy clears the same hurdles before any capital — paper or real:
 
----
+1. **Significance** — t-test on daily returns, t > 3 (Harvey–Liu–Zhu bar), CI lower bound > 0.
+2. **Out-of-sample** — fixed IS/OOS split; OOS is touched once, never for tuning.
+3. **Robustness** — parameter-sensitivity grid (a plateau, not a lucky spike) + Monte Carlo block-bootstrap (does the result depend on the lucky *order* of days?).
+4. **Costs** — the edge must survive realistic slippage + commissions (rule of thumb: edge ≥ 3× costs).
+5. **Live validation** — paper trading catches pipeline bugs; the strategy itself is validated only by *time*.
 
-## Core Idea
-
-Go long an asset if its 12-month return is positive, short if negative. Scale position size inversely to recent realized volatility so each asset contributes equally to portfolio risk.
-
-```
-signal    = sign(12M return)          # +1 long / -1 short
-position  = signal × (target_vol / realized_vol)
-```
-
-The key insight: volatility scaling transforms a Sharpe of **0.13** (binary signal) into **1.86** (vol-scaled). Without it, the strategy barely beats noise. With it, it is one of the most robust anomalies in empirical finance.
+Failures are documented, not hidden — see the post-mortem below and the abandoned ORB.
 
 ---
 
-## Post-Mortem: How I caught my own look-ahead bias (2026-07-06)
+## Post-mortem: how I caught my own look-ahead bias
 
-**What happened.** While learning hypothesis testing, I re-implemented TSMOM from scratch and ran a t-test on the daily returns. Expected: t ≈ 5–6, consistent with the published Sharpe. Got: t = 1.28, p = 0.20. The rebuild was a faithful copy of the original — which meant the original had the bug.
+While learning hypothesis testing, I re-implemented TSMOM from scratch and ran a t-test. Expected t ≈ 5–6 (consistent with the published Sharpe); got **t = 1.28, p = 0.20**. The rebuild was a faithful copy of the original — which meant the original had the bug.
 
-**The bug.** One line:
+**The bug — one line:**
 
 ```python
-# WRONG (original):
-signal  = np.sign(close.pct_change(252)).shift(1)
+# WRONG (original): today's position × yesterday's return
 returns = position * log_returns.shift(1)
 
-# RIGHT:
-signal  = np.sign(close.pct_change(252))
+# RIGHT: yesterday's position × today's return
 returns = position.shift(1) * log_returns
 ```
 
-The original multiplied today's position by *yesterday's* return. Since the momentum signal window (12-month return ending yesterday) *contains* yesterday's return, the signal already knew the outcome of the day it was trading. Systematically long on up-days — dream numbers out of thin air.
-
-**The proof.** Same data, same parameters, only the line above changed:
+The 12-month signal window *contains* yesterday's return, so the shifted-return version let the signal "know" the outcome of the day it was trading. Same data, same parameters, only that line changed:
 
 | Version | Sharpe | t-stat | p-value |
 |---|---|---|---|
 | Original (bug) | 1.87 | 8.15 | 4.6×10⁻¹⁶ |
 | Corrected | 0.29 | 1.28 | 0.20 |
 
-**What I take from it.**
-1. A single honest significance test on a clean rebuild found a bug that had survived IS/OOS splits, a 4×4 parameter grid and a "fully validated" label. Validation built on top of broken code validates the bug.
-2. Sharpe 1.86 on 5 ETFs with vanilla momentum should have triggered suspicion — Moskowitz et al. (2012) report ~1.0 gross on 58 futures markets. When your simple version beats the paper by 80%, the most likely explanation is a bug, not genius.
-3. Re-validation (corrected code, broader universe, transaction costs) is in progress. Results will be published here — whatever they are.
+**What I take from it:** a single honest significance test found a bug that had survived an IS/OOS split, a parameter grid and a "fully validated" label — validation built on broken code just validates the bug. And Sharpe 1.86 on 5 ETFs with vanilla momentum should have triggered suspicion: Moskowitz et al. (2012) report ~1.0 gross on 58 futures markets. When your simple version beats the paper by 80%, the likely explanation is a bug, not genius. The corrected, broadened rebuild lives in [`strategies/tsmom_v2/`](strategies/tsmom_v2/).
 
-**Update (2026-07-08) — first honest run.** TSMOM v2 on a 24-asset cross-asset universe (equities, bonds, commodities, FX; growing universe from 2001, corrected timing logic):
-
-| Metric | TSMOM v2 (honest) |
-|---|---|
-| Sharpe | 0.76 |
-| t-stat | 3.83 — above the Harvey/Liu/Zhu 3.0 hurdle |
-| p-value | 1.3×10⁻⁴ |
-| 95%-CI (annual return) | [+2.9%, +8.9%] |
-| Max Drawdown | −16.5% |
-
-Consistent with the literature: breadth is momentum's fuel (5 ETFs → Sharpe 0.29, 24 assets → 0.76 — still below Moskowitz's ~1.0 on 58 futures markets, as it should be). **Preliminary:** out-of-sample split, parameter sensitivity and transaction costs still pending before any paper-trading decision.
-
-**Audit side-finding:** The bug hunt extended to all strategies. The cross-sectional momentum implementation turned out to trade with *inverted signs* (buying losers, shorting winners — contradicting its own documented intent). Its historical results are void; a clean re-test on a survivorship-free universe is queued.
+*Side-finding:* the audit extended to all strategies — the cross-sectional momentum code traded with inverted signs (buying losers). Its results are void; a clean re-test on a survivorship-free universe is queued.
 
 ---
 
-## Results — ⚠️ invalid, see post-mortem above
+## Reproduce
 
-| Metric | Value |
-|--------|-------|
-| Sharpe Ratio (gross) | **1.86** |
-| Sharpe Ratio (net, 5 bps) | 1.73 |
-| Annualized Return | ~28% |
-| Annualized Volatility | ~15% |
-| Max Drawdown | **−9.3%** |
-| Positive Years | 17 / 19 |
-| Best Year | 2013 (Sharpe 3.75) |
-| Worst Year | 2009 (Sharpe −0.07) |
-| p-value (t-test) | **2.2 × 10⁻¹⁵** |
-
----
-
-## In-Sample vs. Out-of-Sample
-
-| Period | Sharpe |
-|--------|--------|
-| In-Sample (2000–2015) | 1.63 |
-| Out-of-Sample (2015–2026) | **1.87** |
-
-OOS Sharpe **exceeds** IS Sharpe — no overfitting detected. The strategy held up on unseen data better than on the data it was developed on.
-
----
-
-## Binary vs. Volatility-Scaled
-
-| Variant | Sharpe | Comment |
-|---------|--------|---------|
-| Binary (no vol scaling) | 0.13 | Below SPY buy & hold |
-| Volatility-scaled | **1.86** | Core result |
-
-This comparison demonstrates that the signal itself (momentum direction) has edge — but without proper position sizing, the edge is buried under unequal risk contributions.
-
----
-
-## Parameter Sensitivity (Sharpe across lookback × vol-window)
-
-|  | Vol 20d | Vol 40d | Vol 60d | Vol 120d |
-|--|---------|---------|---------|----------|
-| **Lookback 63d** | 3.57 | 3.37 | 3.25 | 3.06 |
-| **Lookback 126d** | 2.61 | 2.51 | 2.46 | 2.31 |
-| **Lookback 189d** | 2.11 | 2.04 | 2.01 | 1.91 |
-| **Lookback 252d** | 1.97 | 1.88 | **1.86** | 1.79 |
-
-All 16 parameter combinations produce Sharpe > 1.7. The result is not sensitive to exact parameter choice — this rules out overfitting to a specific lookback or vol window.
-
----
-
-## Asset Correlations
-
-No pair of assets exceeds 0.5 correlation. USO (oil) and GLD (gold) are slightly negatively correlated with SPY — providing genuine diversification rather than concentrated risk.
-
-This is why cross-asset momentum works: assets move in different directions at different times, and the strategy systematically captures those trends.
-
----
-
-## Methodology & Validation Standards
-
-- **Look-ahead bias prevention:** ~~Signal computed on close[t], applied at open[t+1] via `.shift(1)`~~ ⚠️ This claim was wrong — the shift was applied in the wrong place (see post-mortem). Corrected pattern: `position.shift(1) * returns`
-- **Data quality:** `yfinance` with `auto_adjust=True` — split and dividend adjusted prices
-- **IS/OOS split:** Fixed cutoff 2015 — OOS data never touched during development
-- **Statistical test:** t-test on daily returns, p = 2.2 × 10⁻¹⁵
-- **Parameter robustness:** Full 4×4 sensitivity grid — no cherry-picked parameters
-- **Benchmark:** Compared against SPY buy & hold
-
----
-
-## Code
-
-Signal construction and position sizing in ~10 lines:
-
-```python
-# 1. Signal: 12-month trailing return (unshifted — timing handled once, at the end)
-signal = np.sign(close.pct_change(252))
-
-# 2. Volatility scaling: each asset targets 15% annualized vol
-vol      = log_returns.rolling(60).std() * np.sqrt(252)
-position = (0.15 / vol) * signal
-
-# 3. Portfolio return: yesterday's position earns today's return
-portfolio_returns = (position.shift(1) * log_returns).mean(axis=1)
+```bash
+pip install -r requirements.txt
 ```
 
-Full implementation: [`14 Code/TSMOM_Framework.py`](14%20Code/TSMOM_Framework.py)
+Then run any strategy from its folder (each has its own README, code and results). Data is pulled live from Yahoo Finance — no API key needed.
 
----
-
-## Stack
-
-```
-Python     pandas · numpy · scipy · statsmodels · yfinance · matplotlib
-```
+**Stack:** Python · pandas · numpy · scipy · statsmodels · yfinance · matplotlib
 
 ---
 
 ## Reference
 
-> Moskowitz, T. J., Ooi, Y. H., & Pedersen, L. H. (2012).  
-> *Time series momentum.*  
-> Journal of Financial Economics, 104(2), 228–250.  
-> https://doi.org/10.1016/j.jfineco.2011.11.003
+> Moskowitz, T. J., Ooi, Y. H., & Pedersen, L. H. (2012). *Time Series Momentum.*
+> Journal of Financial Economics, 104(2), 228–250. https://doi.org/10.1016/j.jfineco.2011.11.003
 
 ---
 
-*More strategies in development. Updated regularly.*
+*Portfolio in development — updated as strategies clear (or fail) the hurdles.*
