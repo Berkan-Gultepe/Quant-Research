@@ -60,7 +60,7 @@ Cost-sensitivity: 3 bp→0.67 · 5 bp→0.61 · 10 bp→0.46 (t<3) · 20 bp→0.
 
 ![TSMOM v2 equity vs SPY (log scale) and Monte Carlo cone of 10k bootstrapped paths](results.png)
 
-*Left: TSMOM v2 vs SPY buy-and-hold (log scale). Right: 10,000 block-bootstrapped equity paths — the real backtest (red) runs through the middle; the lower edge stays above 1 (no path to ruin, gross of costs).*
+*Four-panel validation overview. **(1)** Equity — gross & net TSMOM vs SPY (log). Honest read: SPY wins on total return in this bull run; TSMOM wins on smaller drawdowns and near-zero correlation. **(2)** Monte Carlo cone — 10k block-bootstrapped **net** paths; the real backtest (red) sits in the middle, lower edge stays above 1. **(3)** Cost-sensitivity — net Sharpe vs transaction cost (survives 5 bp, thins fast beyond 10). **(4)** Parameter-sensitivity heatmap — Sharpe across the lookback × vol-window grid (the plateau = robustness).*
 
 ## Honest verdict
 
