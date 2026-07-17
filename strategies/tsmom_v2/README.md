@@ -8,7 +8,7 @@ on a broadened, growing **24-asset universe** (equities, bonds, commodities, FX)
 
 ## Files
 - `tsmom_v2.py` — strategy: signal (12M trend) → vol-scaled position → returns (`position.shift(1) * log_returns`).
-- `validation.py` — IS/OOS split, 5×5 parameter sensitivity, Monte Carlo block-bootstrap.
+- `validation.py` — IS/OOS split, 5×5 parameter sensitivity, Monte Carlo block-bootstrap, **net-of-cost + Deflated Sharpe (KW29)**.
 - `plot_results.py` — generates `results.png` (equity vs SPY + Monte Carlo cone).
 
 ## Reproduce
@@ -22,15 +22,18 @@ python plot_results.py    # writes results.png
 
 Daily data is pulled live from Yahoo Finance (24-asset universe, 2001–present). No API key needed.
 
-## Results (KW28 — all GROSS of transaction costs)
+## Results (KW28–29)
 
 | Test | Result | Verdict |
 |---|---|---|
-| Significance | Sharpe **0.76** · t 3.83 · p 1.3e-4 · CI [+2.9%, +8.9%] | ✅ Hurdle 1 |
+| Significance (gross) | Sharpe **0.76** · t 3.83 · p 1.3e-4 · CI [+2.9%, +8.9%] | ✅ Hurdle 1 |
 | IS / OOS | IS 0.80 → OOS 0.69 (14% decay, both significant) | ✅ Hurdle 2a |
 | Sensitivity | all 25 cells positive (0.42–0.80), plateau at 126–252 lookback | ✅ Hurdle 2b |
 | Monte Carlo | P(Sharpe>0)=100%, backtest = median, worst-5% DD **−26%** | ✅ robust |
-| Costs (KW29) | pending | ⏳ decisive |
+| Costs (KW29) | net Sharpe **0.61** (5 bp) · t 3.08 · turnover 19.55/yr | ✅ survives (conditional) |
+| Deflated Sharpe (KW29) | DSR **96.6%** · deflated t **1.83** (N=25, s_a 0.124) | ✅ passes multiple-testing |
+
+Cost-sensitivity: 3 bp→0.67 · 5 bp→0.61 · 10 bp→0.46 (t<3) · 20 bp→0.16 (dead). Cost-sensitive, not cost-proof.
 
 ## Charts
 
@@ -41,8 +44,11 @@ Daily data is pulled live from Yahoo Finance (24-asset universe, 2001–present)
 > Run `python plot_results.py` to generate `results.png`, then commit it alongside the code.
 
 ## Honest verdict
-Real edge **gross of costs**, robust to out-of-sample and to parameter/path reshuffling.
-Not yet a live strategy — the transaction-cost hurdle (KW29) is the one that killed ORB
-(t 5.43 → 1.45). Kill-switch calibrated to the Monte-Carlo worst-case drawdown (−26%),
-not the single-backtest −16.5%. And that −26% is a floor, not a ceiling (bootstrap never
-draws worse than history).
+Passes **all five hurdles** — significance, IS/OOS, sensitivity, Monte Carlo, costs *and*
+Deflated Sharpe — but each only narrowly. The honest number after everything is a
+**deflated t ≈ 1.8**, not the raw 3.08: costs shrink the edge (net Sharpe 0.61) and the
+multiple-testing correction shrinks it further. Survives where ORB died (t 5.43 → 1.45)
+because of far lower turnover. Green for **paper trading at very small size**, not "all in".
+Kill-switch calibrated to the Monte-Carlo worst-case drawdown (−26%), not the single-backtest
+−16.5%. Open before real money: per-asset leverage cap (vol-scaling wants ~10× on SHY),
+vol-dependent costs, real broker rates.
