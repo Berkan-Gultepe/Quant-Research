@@ -4,12 +4,17 @@
 > only ~2.5% of portfolio *risk* — almost nothing. Diversification only pays when the
 > building blocks contribute **equal risk**, not equal capital.
 >
-> ⚠️ **Read this first:** the risk-parity result below requires ~2.5× leverage on TSMOM,
-> a strategy that already runs ~45× gross notional in its current (uncapped) form.
-> That is ~120× notional — **not implementable**, with ETFs or futures. The number is
-> the *theoretical ceiling*, and the reason a per-asset leverage cap is the top open
-> item before real money. It is shown here to quantify what correct sizing is worth,
-> not as a tradeable result.
+> ⚠️ **Read this first — two reasons the risk-parity row is a ceiling, not a result:**
+>
+> **1. Leverage is not fundable.** It requires ~2.5× leverage on TSMOM, a strategy that
+> already runs ~45× gross notional in its current (uncapped) form — i.e. ~120× notional.
+> Not implementable, with ETFs or futures. A per-asset leverage cap is the top open item
+> before real money.
+>
+> **2. Financing costs are NOT included.** The blend runs 175% gross exposure, so 75% is
+> borrowed — and that interest is not deducted below (see "Financing drag"). At realistic
+> retail margin rates the return advantage disappears entirely. Only the *risk* advantage
+> survives.
 
 ## Question
 
@@ -54,6 +59,29 @@ Correlation SPY ↔ TSMOM: **−0.139** (slightly negative — better than the u
    leverage required is not fundable with the current uncapped sizing. Fixing position
    sizing (per-asset cap, portfolio-level vol targeting, dropping ultra-low-vol assets)
    is what would make any of this real.
+
+## Financing drag — the missing cost
+
+The risk-parity blend holds 175% gross exposure (50% SPY + 125% levered TSMOM), so **75%
+of capital is borrowed**. The table above does **not** deduct that interest. Correcting it:
+
+`financing drag = 0.75 × borrowing rate`
+
+| Borrowing rate | Drag | CAGR after financing | vs SPY (9.04%) |
+|---|---|---|---|
+| 2% (historical avg. risk-free) | −1.5% | 9.7% | marginally better |
+| 4% (current risk-free) | −3.0% | 8.2% | **worse** |
+| 6% (typical retail margin) | −4.5% | 6.7% | **clearly worse** |
+
+**So the return advantage is fragile and depends entirely on funding cost.** What survives
+regardless is the *risk* advantage — 12.5% vol instead of 19.1%, and −21.8% max drawdown
+instead of −55.2%. Interest does not eat that. The honest framing is therefore not
+"more money and less risk", but "**similar money at roughly half the drawdown**" — and only
+if funding is cheap.
+
+This is also an argument for futures over margin borrowing: with futures the financing is
+embedded in the contract (cash collateral earns interest, the price carries the cost of
+carry), so the effective rate is close to risk-free rather than a retail margin rate.
 
 ## Takeaway
 
