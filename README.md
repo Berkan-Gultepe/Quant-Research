@@ -8,13 +8,13 @@ Self-directed quantitative trading research. I build and validate systematic str
 
 ## Strategies
 
-| Strategy | Sharpe (gross) | Status | Honest verdict |
+| Strategy | Sharpe | Status | Honest verdict |
 |---|---|---|---|
-| [TSMOM v2](strategies/tsmom_v2/) | **0.76** | ✅ Hurdles 1–2 + Monte Carlo passed · costs pending | Real edge gross of costs; robust out-of-sample (IS 0.80 → OOS 0.69) and to parameter/path reshuffling. Not live until it survives transaction costs. |
+| [TSMOM v2](strategies/tsmom_v2/) | **0.76** gross<br>**0.61** net | ✅ All 5 hurdles cleared<br>🟢 Paper live since 2026-07-16 | Survives costs at 5 bp (t = 3.08), and survives the multiple-testing correction: **deflated Sharpe 96.6%, deflated t 1.83** after accounting for the 25-cell parameter search. Clears every bar — each one narrowly. **Cost-sensitive, not cost-proof**: dead at 20 bp. Paper only; a per-asset leverage cap is required before real money. |
 | [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
 | [ORB (prop firm)](strategies/orb_prop_firm/) | — | ⚰️ Abandoned | Significant gross (t = 5.43) but the edge died after slippage + commissions (t → 1.45). A cost-discipline lesson, kept on purpose. |
 
-Exploratory work, not yet strategies: [alternative data](research/alternative_data/) — COT positioning, credit spreads, yield-curve regime.
+Research, not strategies: [portfolio construction](research/portfolio_construction/) — why risk allocation ≠ capital allocation, and what financing costs do to a levered risk-parity blend · [alternative data](research/alternative_data/) — COT positioning, credit spreads, yield-curve regime.
 
 ---
 
@@ -25,8 +25,9 @@ Every strategy clears the same hurdles before any capital — paper or real:
 1. **Significance** — t-test on daily returns, t > 3 (Harvey–Liu–Zhu bar), CI lower bound > 0.
 2. **Out-of-sample** — fixed IS/OOS split; OOS is touched once, never for tuning.
 3. **Robustness** — parameter-sensitivity grid (a plateau, not a lucky spike) + Monte Carlo block-bootstrap (does the result depend on the lucky *order* of days?).
-4. **Costs** — the edge must survive realistic slippage + commissions (rule of thumb: edge ≥ 3× costs).
-5. **Live validation** — paper trading catches pipeline bugs; the strategy itself is validated only by *time*.
+4. **Costs** — the edge must survive realistic slippage + commissions (rule of thumb: edge ≥ 3× costs). Cost is modelled as `turnover × rate`, because turnover is the multiplier that decides which strategies die.
+5. **Multiple testing** — the raw t-stat of the *best* cell in a parameter grid is inflated by the search itself. Corrected with the **deflated Sharpe ratio** (Bailey & López de Prado): the winning Sharpe is measured against the Sharpe a lucky-best-of-N search would produce anyway.
+6. **Live validation** — paper trading catches pipeline bugs and tests discipline; the edge itself is validated only by *time*. At Sharpe 0.61 that means roughly a decade — paper trading proves the plumbing, not the alpha.
 
 Failures are documented, not hidden — see the post-mortem below and the abandoned ORB.
 
