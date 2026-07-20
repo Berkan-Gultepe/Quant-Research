@@ -1,6 +1,6 @@
 # Quant Research
 
-Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — momentum, risk engineering, cross-asset dynamics — with an emphasis on **honest validation**: a strategy only ships after it clears significance, out-of-sample, robustness and cost hurdles.
+Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — momentum, risk engineering, cross-asset dynamics — with an emphasis on **honest validation**: a strategy only ships after it clears significance, out-of-sample, robustness, cost, multiple-testing and implementability hurdles.
 
 > ⚠️ **Results under revision (2026-07).** During statistical re-validation I found a look-ahead bug in the original TSMOM code that had inflated its Sharpe to 1.86. The honest rebuild (v2) is below. I'm leaving the story visible because catching your own bugs — and documenting them — is the job.
 
@@ -10,7 +10,7 @@ Self-directed quantitative trading research. I build and validate systematic str
 
 | Strategy | Sharpe | Status | Honest verdict |
 |---|---|---|---|
-| [TSMOM v2](strategies/tsmom_v2/) | **0.76** gross<br>**0.61** net | ✅ All 5 hurdles cleared<br>🟢 Paper live since 2026-07-16 | Survives costs at 5 bp (t = 3.08), and survives the multiple-testing correction: **deflated Sharpe 96.6%, deflated t 1.83** after accounting for the 25-cell parameter search. Clears every bar — each one narrowly. **Cost-sensitive, not cost-proof**: dead at 20 bp. Paper only; a per-asset leverage cap is required before real money. |
+| [TSMOM v2](strategies/tsmom_v2/) | **0.76** gross<br>**0.61** net | ✅ 6 of 7 hurdles<br>❌ fails implementability<br>🟢 Paper live since 2026-07-16 | Survives costs at 5 bp (t = 3.08), and survives the multiple-testing correction: **deflated Sharpe 96.6%, deflated t 1.83** after accounting for the 25-cell parameter search. Clears every bar — each one narrowly. **Cost-sensitive, not cost-proof**: dead at 20 bp. **Fails hurdle 6:** vol-scaling asks for up to **58x** leverage on a single quiet asset (~45x gross notional) — not fundable with any broker or futures account. A per-asset leverage cap is the blocking item before real money. Paper-only until then. |
 | [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
 | [ORB (prop firm)](strategies/orb_prop_firm/) | — | ⚰️ Abandoned | Significant gross (t = 5.43) but the edge died after slippage + commissions (t → 1.45). A cost-discipline lesson, kept on purpose. |
 
@@ -27,7 +27,8 @@ Every strategy clears the same hurdles before any capital — paper or real:
 3. **Robustness** — parameter-sensitivity grid (a plateau, not a lucky spike) + Monte Carlo block-bootstrap (does the result depend on the lucky *order* of days?).
 4. **Costs** — the edge must survive realistic slippage + commissions (rule of thumb: edge ≥ 3× costs). Cost is modelled as `turnover × rate`, because turnover is the multiplier that decides which strategies die.
 5. **Multiple testing** — the raw t-stat of the *best* cell in a parameter grid is inflated by the search itself. Corrected with the **deflated Sharpe ratio** (Bailey & López de Prado): the winning Sharpe is measured against the Sharpe a lucky-best-of-N search would produce anyway.
-6. **Live validation** — paper trading catches pipeline bugs and tests discipline; the edge itself is validated only by *time*. At Sharpe 0.61 that means roughly a decade — paper trading proves the plumbing, not the alpha.
+6. **Implementability** — does a broker, an instrument and an account size exist that can actually carry the position the sizing math demands? A strategy can clear every statistical hurdle and still be untradeable. **TSMOM v2 currently fails this one** (see below), which is why it is paper-only.
+7. **Live validation** — paper trading catches pipeline bugs and tests discipline; the edge itself is validated only by *time*. At Sharpe 0.61 that means roughly a decade — paper trading proves the plumbing, not the alpha.
 
 Failures are documented, not hidden — see the post-mortem below and the abandoned ORB.
 
