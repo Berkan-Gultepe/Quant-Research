@@ -2,7 +2,7 @@
 
 Self-directed quantitative trading research. I build and validate systematic strategies from academic papers — momentum, risk engineering, cross-asset dynamics — with an emphasis on **honest validation**: a strategy only ships after it clears significance, out-of-sample, robustness, cost, multiple-testing and implementability hurdles.
 
-> ⚠️ **Results under revision (2026-07).** During statistical re-validation I found a look-ahead bug in the original TSMOM code that had inflated its Sharpe to 1.86. The honest rebuild (v2) is below. I'm leaving the story visible because catching your own bugs — and documenting them — is the job.
+> ⚠️ **Look-ahead bug found and fixed (July 2026).** During statistical re-validation I found a bug in the original TSMOM code that had inflated its Sharpe to 1.86. The honest rebuild (v2) is below and has since been through the full hurdle set — it clears six of seven. I'm leaving the story visible because catching your own bugs, and documenting them, is the job.
 
 ---
 
@@ -11,7 +11,7 @@ Self-directed quantitative trading research. I build and validate systematic str
 | Strategy | Sharpe | Status | Honest verdict |
 |---|---|---|---|
 | [TSMOM v2](strategies/tsmom_v2/) | **0.76** gross<br>**0.61** net | ✅ 6 of 7 hurdles<br>❌ fails implementability<br>🟢 Paper live since 2026-07-16 | Survives costs at 5 bp (t = 3.08), and survives the multiple-testing correction: **deflated Sharpe 96.6%, deflated t 1.83** after accounting for the 25-cell parameter search. Clears every bar — each one narrowly. **Cost-sensitive, not cost-proof**: dead at 20 bp. **Fails hurdle 6:** vol-scaling asks for up to **58x** leverage on a single quiet asset (~45x gross notional) — not fundable with any broker or futures account. A per-asset leverage cap is the blocking item before real money. Paper-only until then. |
-| [Dual Momentum](strategies/dual_momentum/) | 0.66 | 🔄 Paper trading | No alpha vs. SPY (p = 0.23) — smooths the market, doesn't beat it |
+| [Dual Momentum](strategies/dual_momentum/) | 0.66 | ⏸️ Validated, not traded | No alpha vs. SPY (p = 0.23) — it smooths the market rather than beating it. Significant against cash (p = 0.005), not against the benchmark that matters. **Not traded, on purpose:** if it can't beat buy-and-hold, the honest alternative is buy-and-hold. Kept as a documented negative result. |
 | [ORB (prop firm)](strategies/orb_prop_firm/) | — | ⚰️ Abandoned | Significant gross (t = 5.43) but the edge died after slippage + commissions (t → 1.45). A cost-discipline lesson, kept on purpose. |
 
 Research, not strategies: [portfolio construction](research/portfolio_construction/) — why risk allocation ≠ capital allocation, and what financing costs do to a levered risk-parity blend · [alternative data](research/alternative_data/) — COT positioning, credit spreads, yield-curve regime.
