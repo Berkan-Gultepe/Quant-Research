@@ -56,7 +56,29 @@ Daily data pulled live from Yahoo Finance. No API key needed.
 | Costs | net Sharpe **0.61** (5 bp) · t 3.08 · turnover 19.55/yr | ✅ survives (conditional) |
 | Deflated Sharpe | DSR **96.6%** · deflated t **1.83** (N=25, s_a 0.124) | ✅ passes multiple-testing |
 
-Cost-sensitivity: 3 bp→0.67 · 5 bp→0.61 · 10 bp→0.46 (t<3) · 20 bp→0.16 (dead). **Cost-sensitive, not cost-proof.**
+### The most fragile assumption in this whole validation
+
+| Cost rate | Net Sharpe | t | Verdict |
+|---|---|---|---|
+| 0 bp *(sanity check)* | 0.76 | 3.84 | = gross, confirms the cost block is wired correctly |
+| 3 bp | 0.67 | 3.38 | passes |
+| **5 bp — the assumed rate** | **0.61** | **3.08** | **passes, barely** |
+| 10 bp | 0.46 | 2.32 | **fails hurdle 1** |
+| 20 bp | 0.16 | 0.82 | dead |
+
+**Read that table again.** The gap between "validated" and "not validated" is **five basis points** —
+and 5 bp is an *assumption I have never measured*. I did not pull broker quotes for the 24 ETFs; I
+picked a plausible round number. The illiquid corner of the universe (UNG, DBB, DBA, FXA) almost
+certainly trades wider than that.
+
+So "cost-sensitive, not cost-proof" understates it. The honest version: **the result rests on an
+unmeasured input, and the margin of safety on that input is one notch on the table.** Measuring
+real per-asset spreads is the single highest-value open item — higher than any further parameter work.
+
+One clarification on what "fails" means: at 10 bp the Sharpe is still **0.46, positive**. The returns
+do not vanish. What vanishes is my ability to distinguish them from luck at my own pre-registered bar.
+**The strategy doesn't die — the claim does.** And a claim I can't defend is one I can't size a
+position on.
 
 ![TSMOM v2 equity vs SPY (log scale) and Monte Carlo cone of 10k bootstrapped paths](results.png)
 
