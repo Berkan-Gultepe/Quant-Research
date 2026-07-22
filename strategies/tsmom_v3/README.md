@@ -55,6 +55,11 @@ the extreme leverage sat on the *quietest* assets (SHY et al.), which moved huge
 notional but contributed almost no portfolio risk *and* no return. Cutting it
 removes the most expensive, most illiquid churn. **Gross notional is not risk.**
 
+Note the drawdown rows: **max drawdown is identical (−17.1%)** — the cap does not
+touch the *worst* moment (that loss was never leverage-driven). It only trims the
+*everyday* grind (Ulcer 5.90 → 5.82). **The cap is a noise filter, not a crash
+shield.** The quiet-asset leverage it removes was never what blows up in a crisis.
+
 ## Is TSMOM even worth trading vs. buy-and-hold?
 
 On **return** alone, no — SPY compounds faster (9.0% vs 4.6% CAGR). On every
