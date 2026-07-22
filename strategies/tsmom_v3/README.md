@@ -44,10 +44,10 @@ deflated t stays **1.83**.
 | max leverage / asset | 58.4× | **10.0×** |
 | net Sharpe | 0.610 | **0.618** (t = 3.12) |
 | turnover / yr | 19.55 | **16.11** |
-| CAGR | — | 4.6% |
-| max drawdown | — | −17.1% |
-| Calmar | — | **0.27** |
-| Ulcer index | — | **5.82** |
+| CAGR | 4.5% | 4.6% |
+| max drawdown | −17.1% | −17.1% |
+| Calmar | 0.26 | **0.27** |
+| Ulcer index | 5.90 | **5.82** |
 | implementability (hurdle 6) | ❌ fails | ✅ **passes** |
 
 **The cap costs nothing — it improves both Sharpe and turnover.** The reason:

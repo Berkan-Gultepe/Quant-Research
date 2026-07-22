@@ -45,8 +45,10 @@ def main():
     net, turn, maxlev = net_returns(close, log_returns)
     dm = drawdown_metrics(net)
 
-    # --- uncapped (v2) for the cap panels ---
-    pos_unc = uncapped_position(close, log_returns)
+    # --- uncapped (v2) for the cap panels + drawdown comparison ---
+    pos_unc  = uncapped_position(close, log_returns)
+    net_unc  = (pos_unc.shift(1) * log_returns - COST_RATE * pos_unc.diff().abs()).mean(axis=1).dropna()
+    dm_unc   = drawdown_metrics(net_unc)
 
     # SPY buy & hold on the same window
     spy = yf.download("SPY", start="2001-01-01", progress=False)["Close"].dropna()
@@ -109,6 +111,9 @@ def main():
     print(f"  net Sharpe {sharpe(nt):.3f} | max lev {maxlev:.1f}x | "
           f"turnover {turn:.2f} | Calmar {dm['calmar']:.2f} | Ulcer {dm['ulcer']:.2f}")
     print(f"  cap clips {clipped_share:.1f}% of position-days")
+    print("  --- v2 (uncapped) for the README table ---")
+    print(f"  v2 CAGR {dm_unc['cagr']*100:.1f}% | MaxDD {dm_unc['maxdd']*100:.1f}% | "
+          f"Calmar {dm_unc['calmar']:.2f} | Ulcer {dm_unc['ulcer']:.2f}")
 
 
 if __name__ == "__main__":
