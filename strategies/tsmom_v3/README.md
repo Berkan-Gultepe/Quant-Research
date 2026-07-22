@@ -62,7 +62,7 @@ On **return** alone, no — SPY compounds faster (9.0% vs 4.6% CAGR). On every
 
 | | TSMOM v3 | SPY |
 |---|---|---|
-| Sharpe | 0.62 | 0.55 |
+| Sharpe | 0.62 | 0.46 |
 | Calmar | 0.27 | 0.16 |
 | Ulcer | 5.82 | ~15 |
 | max drawdown | −17% | −55% |
