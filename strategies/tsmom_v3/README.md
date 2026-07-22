@@ -27,7 +27,7 @@ deflated t stays **1.83**.
 | | v2 (uncapped) | **v3 (10× cap)** |
 |---|---|---|
 | max leverage / asset | 58.4× | **10.0×** |
-| net Sharpe | 0.610 | **0.618** |
+| net Sharpe | 0.610 | **0.618** (t = 3.12) |
 | turnover / yr | 19.55 | **16.11** |
 | CAGR | — | 4.6% |
 | max drawdown | — | −17.1% |
