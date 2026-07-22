@@ -17,7 +17,7 @@ derived from the outside constraint that actually binds: broker/futures margin
 
 The result (KW30, 2026-07-22, net of 5 bp):
     max leverage      58.4x  ->  10.0x
-    net Sharpe        0.610  ->  0.618   (unchanged — slightly better)
+    net Sharpe        0.610  ->  0.618   (t = 3.12; unchanged — slightly better)
     turnover / yr     19.55  ->  16.11   (LOWER — the capped SHY churn was noise)
     Calmar            0.27   (SPY 0.16)
     Ulcer index       5.82   (very calm)
