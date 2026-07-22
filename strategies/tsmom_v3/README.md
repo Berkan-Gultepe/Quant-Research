@@ -4,6 +4,21 @@
 58× leverage on a single asset). v3 adds one line — a per-asset leverage cap —
 and becomes tradable **without losing anything**. It even improves.
 
+## Results
+
+![TSMOM v3 — validation plots](results.png)
+
+- **Equity (top-left)** — v3 gross/net vs SPY on a log scale. Lower return than
+  SPY, but far smoother: a risk sleeve, not a return engine.
+- **The cap in action (top-right)** — max per-asset leverage per day. Uncapped
+  (v2) spikes to ~58×; the 10× cap flattens the spikes without touching the body.
+- **Where the cap bites (bottom-left)** — the uncapped leverage distribution. Only
+  a thin tail sits beyond 10× — the noisy, quiet-asset churn the cap removes.
+- **Underwater (bottom-right)** — the v3 drawdown curve, annotated with MaxDD,
+  Calmar and Ulcer.
+
+Regenerate with `python plot_results.py` (writes `results.png`).
+
 ## The change
 
 ```python
