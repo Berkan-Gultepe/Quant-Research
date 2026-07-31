@@ -1,19 +1,18 @@
 """
-Korrelationsbruch in Krisen — die zwei Lager
-============================================
-KW31 · Portfolio-Konstruktion
+Correlation breakdown in crises — the two camps
+===============================================
+KW31 · Portfolio construction
 
-Naiv: "im Crash gehen alle Korrelationen auf 1". An einem MULTI-Asset-Buch stimmt
-das so nicht — der Markt spaltet sich in ZWEI Lager, die sich im Durchschnitt
-wegheben:
-    Risiko-Assets (Aktien, Credit, Rohstoffe) -> Korrelation Richtung +1
-    Sichere Häfen (Staatsanleihen, Yen)       -> entkoppeln, Richtung -1
+The naive claim is "in a crash all correlations go to 1". For a MULTI-asset book
+that is not quite true — the market splits into TWO camps that cancel in the average:
+    risk assets (equities, credit, commodities) -> correlation toward +1
+    safe havens (government bonds, yen)          -> decouple, toward -1
 
-Mechanismus: Zwangsverkäufe durch Hebel (Margin Calls) — "Bilanzen, nicht Assets".
-Ein Liquiditäts-Event, kein Fundamental-Event.
+Mechanism: forced deleveraging (margin calls) — "balance sheets, not assets". A
+liquidity event, not a fundamental one.
 
-Run:  python correlation_crisis.py   ->  druckt Zahlen + Listen, schreibt corr_crisis.png
-(Daten live von Yahoo Finance, kein API-Key.)
+Run:  python correlation_crisis.py   ->  prints numbers + lists, writes corr_crisis.png
+(Data pulled live from Yahoo Finance, no API key.)
 """
 
 import numpy as np
@@ -27,9 +26,9 @@ UNIVERSE = ["SPY", "QQQ", "IWM", "EFA", "EEM", "EWJ", "FXI", "TLT", "IEF", "SHY"
 GREY, RED = "#94a3b8", "#dc2626"
 
 PERIODS = {
-    "Ruhig 2017"       : ("2017-01-01", "2017-12-31"),
-    "Finanzkrise 2008" : ("2008-09-01", "2009-03-31"),
-    "COVID-Crash 2020" : ("2020-02-20", "2020-04-15"),
+    "Calm 2017"        : ("2017-01-01", "2017-12-31"),
+    "GFC 2008"         : ("2008-09-01", "2009-03-31"),
+    "COVID crash 2020" : ("2020-02-20", "2020-04-15"),
 }
 
 
@@ -43,36 +42,36 @@ def main():
     close   = yf.download(UNIVERSE, start="2000-01-01", progress=False)["Close"]
     returns = close.pct_change(fill_method=None).dropna(how="any")
 
-    print("Durchschnittliche paarweise Korrelation der 24 Assets:")
+    print("Average pairwise correlation of the 24 assets:")
     for name, (a, b) in PERIODS.items():
         sub = returns.loc[a:b]
-        print(f"  {name:<18} {avg_corr(sub):+.2f}   ({len(sub)} Tage)")
-    print("  -> der Ø springt kaum: die zwei Lager heben sich weg. "
-          "Trau keiner einzelnen Kennzahl.")
+        print(f"  {name:<18} {avg_corr(sub):+.2f}   ({len(sub)} days)")
+    print("  -> the average barely moves: the two camps cancel out. "
+          "Don't trust a single summary number.")
 
-    # --- Korrelation jedes Assets zu SPY: ruhig vs. Crash ---
+    # --- correlation of each asset to SPY: calm vs crash ---
     def corr_to_spy(s, e):
         r = returns.loc[s:e]
         return r.corrwith(r["SPY"]).drop("SPY")
 
-    calm  = corr_to_spy(*PERIODS["Ruhig 2017"])
-    covid = corr_to_spy(*PERIODS["COVID-Crash 2020"])
+    calm  = corr_to_spy(*PERIODS["Calm 2017"])
+    covid = corr_to_spy(*PERIODS["COVID crash 2020"])
     order = covid.sort_values().index
     calm, covid = calm[order], covid[order]
 
-    print("\nAm stärksten ENTKOPPELT im Crash (echte sichere Häfen):")
+    print("\nMost DECOUPLED in the crash (real safe havens):")
     print(covid.sort_values().head(5).round(2).to_string())
-    print("\nAm stärksten MIT dem Markt (Risiko-Cluster):")
+    print("\nMost WITH the market (risk cluster):")
     print(covid.sort_values().tail(5).round(2).to_string())
 
     y = np.arange(len(order))
     plt.rcParams.update({"font.size": 9})
     plt.figure(figsize=(9, 8))
-    plt.barh(y - 0.2, calm.values,  height=0.4, color=GREY, label="Ruhig 2017")
-    plt.barh(y + 0.2, covid.values, height=0.4, color=RED,  label="COVID-Crash 2020")
+    plt.barh(y - 0.2, calm.values,  height=0.4, color=GREY, label="Calm 2017")
+    plt.barh(y + 0.2, covid.values, height=0.4, color=RED,  label="COVID crash 2020")
     plt.axvline(0, color="k", lw=.8)
-    plt.yticks(y, order); plt.xlabel("Korrelation zu SPY"); plt.legend()
-    plt.title("Korrelation jedes Assets zu SPY — ruhig vs. Crash (die zwei Lager)")
+    plt.yticks(y, order); plt.xlabel("Correlation to SPY"); plt.legend()
+    plt.title("Each asset's correlation to SPY — calm vs crash (the two camps)")
     plt.tight_layout()
     plt.savefig("corr_crisis.png", dpi=130, bbox_inches="tight")
     print("\nwrote corr_crisis.png")

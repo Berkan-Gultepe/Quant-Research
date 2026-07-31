@@ -1,22 +1,23 @@
 """
-TSMOM-Exposure über die Zeit — der Portfolio-Cap, gemessen statt gebaut
-======================================================================
-KW31 · Portfolio-Konstruktion
+TSMOM exposure over time — the portfolio cap, measured not built
+================================================================
+KW31 · Portfolio construction
 
-Frage: Der 10x-Per-Asset-Cap (v3) verhindert NICHT, dass alle Assets gleichzeitig
-long stehen. Wie einseitig steht das Buch — und braucht es einen Portfolio-Cap?
+Question: the 10x per-asset cap (v3) does NOT stop all assets from being long at
+once. How one-sided is the book — and does it need a portfolio-level cap?
 
-Ergebnis (25 J.): ~77% der Tage netto long, Median ~+17x, Ø 12 long / 7 short —
-strukturell long-lastig, ABER es dreht netto short in Abschwüngen (self-correcting).
+Result (25y): ~77% of days net long, median ~+17x, avg 12 long / 7 short —
+structurally long-tilted, BUT it flips net short in downturns (self-correcting).
 
-ENTSCHEIDUNG: KEIN harter Portfolio-Cap.
-  1. Die 77% netto long SIND die Trend-Prämie -> cappen = Rendite bluten.
-  2. Cap = neuer Parameter -> N rauf -> deflated t runter.
-  3. Restgefahr (plötzlicher Crash while long) deckt Positionsgröße + Kill-Switch ab.
-Also: Risiko-Bewusstseins-Punkt, keine neue Regel. Nicht über-engineeren.
+DECISION: NO hard portfolio cap.
+  1. The 77% net long IS the trend premium -> capping it bleeds return.
+  2. A cap is a new parameter -> raises N -> worsens the deflated t.
+  3. The residual risk (a sudden crash while long) is covered by position sizing
+     + kill-switch.
+So it's a risk-*awareness* item, not a new rule. Don't over-engineer.
 
-Run:  python exposure_analysis.py   ->  druckt Statistik, schreibt exposure.png
-(Daten live von Yahoo Finance, kein API-Key.)
+Run:  python exposure_analysis.py   ->  prints stats, writes exposure.png
+(Data pulled live from Yahoo Finance, no API key.)
 """
 
 import numpy as np
@@ -37,20 +38,20 @@ def main():
     logret = np.log(close / close.shift(1)).dropna(how="all")
     signal = np.sign(close.pct_change(LOOKBACK, fill_method=None))
     vol    = logret.rolling(VOL_WINDOW, min_periods=VOL_WINDOW // 2).std() * np.sqrt(252)
-    pos    = ((TARGET_VOL / vol) * signal).clip(-CAP, CAP)      # v3-Positionen (gecappt)
+    pos    = ((TARGET_VOL / vol) * signal).clip(-CAP, CAP)      # v3 positions (capped)
 
     gross   = pos.abs().sum(axis=1)
     net     = pos.sum(axis=1)
     n_long  = (pos > 0).sum(axis=1)
     n_short = (pos < 0).sum(axis=1)
 
-    print(f"Netto-Exposure: Median {net.median():.1f} | Ø {net.mean():.1f} | "
+    print(f"Net exposure: median {net.median():.1f} | avg {net.mean():.1f} | "
           f"min {net.min():.1f} | max {net.max():.1f}")
-    print(f"Anteil Tage netto LONG : {(net > 0).mean()*100:.0f}%")
-    print(f"Ø long {n_long.mean():.1f}/24 | Ø short {n_short.mean():.1f}/24 | "
-          f"Ø Brutto {gross.mean():.0f}x")
-    print("\n-> strukturell long-lastig, aber self-correcting. KEIN harter Cap "
-          "(siehe Docstring). Restgefahr via Sizing + Kill-Switch.")
+    print(f"Share of days net LONG : {(net > 0).mean()*100:.0f}%")
+    print(f"Avg long {n_long.mean():.1f}/24 | avg short {n_short.mean():.1f}/24 | "
+          f"avg gross {gross.mean():.0f}x")
+    print("\n-> structurally long-tilted but self-correcting. NO hard cap "
+          "(see docstring). Residual risk handled by sizing + kill-switch.")
 
     plt.rcParams.update({"font.size": 10, "axes.titlesize": 11, "axes.titleweight": "bold"})
     fig, ax = plt.subplots(2, 1, figsize=(12, 7), sharex=True)
@@ -60,13 +61,13 @@ def main():
     ax[0].fill_between(net.index, net, 0, where=(net < 0), color=RED, alpha=.25)
     for s, e in CRISES:
         ax[0].axvspan(pd.Timestamp(s), pd.Timestamp(e), color="k", alpha=.12)
-    ax[0].set_title("Netto-Exposure (long − short) — grau = Krisen")
-    ax[0].set_ylabel("Netto-Hebel")
+    ax[0].set_title("Net exposure (long - short) — grey = crises")
+    ax[0].set_ylabel("Net leverage")
 
     ax[1].plot(n_long.index, n_long, color=GREEN, lw=1, label="# long")
     ax[1].plot(n_short.index, n_short, color=RED, lw=1, label="# short")
-    ax[1].set_title("Anzahl long vs. short (von 24)")
-    ax[1].set_ylabel("Anzahl"); ax[1].legend()
+    ax[1].set_title("Number long vs short (of 24)")
+    ax[1].set_ylabel("Count"); ax[1].legend()
     plt.tight_layout()
     plt.savefig("exposure.png", dpi=130, bbox_inches="tight")
     print("wrote exposure.png")

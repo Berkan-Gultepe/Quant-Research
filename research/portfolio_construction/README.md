@@ -1,42 +1,42 @@
 # Portfolio construction
 
-Zwei Teile: **(A) KW31 — Methoden, Krisen & Exposure** (unten zuerst), und
-**(B) SPY + TSMOM als Beimischung** (der Rest, aus KW29).
+Two parts: **(A) portfolio methods, crises & exposure** (below first), and
+**(B) SPY + TSMOM as a sleeve** (the rest).
 
 ---
 
-## A) KW31 — die Leiter des Misstrauens, empirisch
+## A) The ladder of distrust, empirically
 
-**Kernlektion der Woche:** *Je noisiger die Zutat, der du traust, desto fragiler
-out-of-sample.* Rangfolge des Misstrauens: **erwartete Renditen (μ) ≫ Korrelationen > Vols.**
+**Core lesson:** *the noisier the input you trust, the more fragile out-of-sample.*
+Ladder of distrust: **expected returns (μ) ≫ correlations > vols.**
 
-### `efficient_frontier.py` — fünf Methoden im OOS-Vergleich
-Markowitz Max-Sharpe · Min-Variance · Risk Parity (voll & naiv) · 1/N. In-sample
-geschätzt, out-of-sample gehandelt (24 Assets, IS 2007–2020, OOS 2020–2026).
+### `efficient_frontier.py` — five methods compared out-of-sample
+Markowitz max-Sharpe · Min-Variance · Risk Parity (full & naive) · 1/N. Estimated
+in-sample, traded out-of-sample (24 assets, IS 2007–2020, OOS 2020–2026).
 
-Gemessene OOS-Sharpes: **Min-Variance 2,74 · Markowitz 1,01 · 1/N 0,71 · RP naiv 0,66 · RP voll 0,29.**
-Drei Funde:
-- **„1/N schlägt Markowitz" ist kein Gesetz** — hier lag Markowitz OOS über 1/N. Slogan ≠ Gesetz.
-- **RP voll (0,29) < RP naiv (0,66)** — die volle Version nutzt die (noisigen) Korrelationen und wird *schlechter*. Rangfolge des Misstrauens bestätigt.
-- **Sharpe ohne Rendite täuscht** — Min-Variances 2,74 ist ein Cash-Fonds (2,2% Rendite); 1/N machte 6,6% (3×). Immer Rendite *und* Risiko lesen. → `frontier.png`
+Measured OOS Sharpe: **Min-Variance 2.74 · Markowitz 1.01 · 1/N 0.71 · RP naive 0.66 · RP full 0.29.**
+Three findings:
+- **"1/N beats Markowitz" is not a law** — here Markowitz beat 1/N OOS. DeMiguel holds *on average*, not always.
+- **RP full (0.29) < RP naive (0.66)** — the full version uses the (noisy) correlations and gets *worse*. Ladder of distrust confirmed.
+- **Sharpe without return misleads** — Min-Variance's 2.74 is a cash fund (2.2% return); 1/N returned 6.6% (3×). Always read return *and* risk. → `frontier.png`
 
-### `correlation_crisis.py` — Korrelationsbruch: die zwei Lager
-Naiv „alles auf 1 im Crash" stimmt für ein Multi-Asset-Buch *nicht*: der Ø springt
-kaum (2017 +0,16 → COVID +0,24), weil sich der Markt in zwei Lager spaltet, die sich
-wegheben. Korrelation *zu SPY* zeigt es: **Risiko → +1** (QQQ 0,98 = SPY, HYG 0,85 =
-Junk-Risiko), **Häfen → negativ** (IEF −0,55, Yen −0,51, TLT/SHY). Mechanismus:
-Zwangsverkäufe durch Hebel — „Bilanzen, nicht Assets". → `corr_crisis.png`
+### `correlation_crisis.py` — correlation breakdown: the two camps
+The naive "everything goes to 1 in a crash" does *not* hold for a multi-asset book:
+the average barely moves (2017 +0.16 → COVID +0.24), because the market splits into
+two camps that cancel out. Correlation *to SPY* reveals it: **risk → +1** (QQQ 0.98 =
+SPY, HYG 0.85 = junk-as-risk), **havens → negative** (IEF −0.55, yen −0.51, TLT/SHY).
+Mechanism: forced deleveraging — "balance sheets, not assets". → `corr_crisis.png`
 
-### `exposure_analysis.py` — der Portfolio-Cap, gemessen statt gebaut
-TSMOM-Buch: **77% der Tage netto long**, Ø 12 long / 7 short — aber es dreht netto
-short in Abschwüngen (self-correcting). **Entscheidung: kein harter Portfolio-Cap** —
-der Long-Tilt *ist* die Trend-Prämie (cappen = Rendite bluten), ein Cap erhöht N und
-verschlechtert den deflated t. Restgefahr (plötzlicher Crash while long) deckt
-Positionsgröße + Kill-Switch ab. → `exposure.png`
+### `exposure_analysis.py` — the portfolio cap, measured not built
+TSMOM book: **77% of days net long**, avg 12 long / 7 short — but it flips net short
+in downturns (self-correcting). **Decision: no hard portfolio cap** — the long tilt
+*is* the trend premium (capping bleeds return), a cap raises N and worsens the
+deflated t. The residual risk (a sudden crash while long) is covered by position
+sizing + kill-switch. → `exposure.png`
 
 ---
 
-## B) Risk allocation ≠ capital allocation (SPY + TSMOM, KW29)
+## B) Risk allocation ≠ capital allocation (SPY + TSMOM)
 
 > **The lesson:** putting 30% of *capital* into a low-volatility strategy contributes
 > only ~2.5% of portfolio *risk* — almost nothing. Diversification only pays when the
