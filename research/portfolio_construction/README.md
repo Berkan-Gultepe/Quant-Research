@@ -1,4 +1,42 @@
-# Portfolio construction — risk allocation ≠ capital allocation
+# Portfolio construction
+
+Zwei Teile: **(A) KW31 — Methoden, Krisen & Exposure** (unten zuerst), und
+**(B) SPY + TSMOM als Beimischung** (der Rest, aus KW29).
+
+---
+
+## A) KW31 — die Leiter des Misstrauens, empirisch
+
+**Kernlektion der Woche:** *Je noisiger die Zutat, der du traust, desto fragiler
+out-of-sample.* Rangfolge des Misstrauens: **erwartete Renditen (μ) ≫ Korrelationen > Vols.**
+
+### `efficient_frontier.py` — fünf Methoden im OOS-Vergleich
+Markowitz Max-Sharpe · Min-Variance · Risk Parity (voll & naiv) · 1/N. In-sample
+geschätzt, out-of-sample gehandelt (24 Assets, IS 2007–2020, OOS 2020–2026).
+
+Gemessene OOS-Sharpes: **Min-Variance 2,74 · Markowitz 1,01 · 1/N 0,71 · RP naiv 0,66 · RP voll 0,29.**
+Drei Funde:
+- **„1/N schlägt Markowitz" ist kein Gesetz** — hier lag Markowitz OOS über 1/N. Slogan ≠ Gesetz.
+- **RP voll (0,29) < RP naiv (0,66)** — die volle Version nutzt die (noisigen) Korrelationen und wird *schlechter*. Rangfolge des Misstrauens bestätigt.
+- **Sharpe ohne Rendite täuscht** — Min-Variances 2,74 ist ein Cash-Fonds (2,2% Rendite); 1/N machte 6,6% (3×). Immer Rendite *und* Risiko lesen. → `frontier.png`
+
+### `correlation_crisis.py` — Korrelationsbruch: die zwei Lager
+Naiv „alles auf 1 im Crash" stimmt für ein Multi-Asset-Buch *nicht*: der Ø springt
+kaum (2017 +0,16 → COVID +0,24), weil sich der Markt in zwei Lager spaltet, die sich
+wegheben. Korrelation *zu SPY* zeigt es: **Risiko → +1** (QQQ 0,98 = SPY, HYG 0,85 =
+Junk-Risiko), **Häfen → negativ** (IEF −0,55, Yen −0,51, TLT/SHY). Mechanismus:
+Zwangsverkäufe durch Hebel — „Bilanzen, nicht Assets". → `corr_crisis.png`
+
+### `exposure_analysis.py` — der Portfolio-Cap, gemessen statt gebaut
+TSMOM-Buch: **77% der Tage netto long**, Ø 12 long / 7 short — aber es dreht netto
+short in Abschwüngen (self-correcting). **Entscheidung: kein harter Portfolio-Cap** —
+der Long-Tilt *ist* die Trend-Prämie (cappen = Rendite bluten), ein Cap erhöht N und
+verschlechtert den deflated t. Restgefahr (plötzlicher Crash while long) deckt
+Positionsgröße + Kill-Switch ab. → `exposure.png`
+
+---
+
+## B) Risk allocation ≠ capital allocation (SPY + TSMOM, KW29)
 
 > **The lesson:** putting 30% of *capital* into a low-volatility strategy contributes
 > only ~2.5% of portfolio *risk* — almost nothing. Diversification only pays when the
