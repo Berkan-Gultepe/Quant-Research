@@ -14,6 +14,7 @@ Self-directed quantitative trading research. I build and validate systematic str
 | [TSMOM v2](strategies/tsmom_v2/) | **0.76** gross<br>**0.61** net | ✅ 6 of 7 · ❌ implementability<br>🟢 Paper live since 2026-07-16 (frozen) | Survives costs at 5 bp (t = 3.08), and survives the multiple-testing correction: **deflated Sharpe 96.6%, deflated t 1.83** after accounting for the 25-cell parameter search. Clears every bar — each one narrowly. **Cost-sensitive, not cost-proof**: dead at 20 bp. **Fails hurdle 6:** vol-scaling asks for up to **58x** leverage on a single quiet asset (~45x gross notional) — not fundable with any broker or futures account. A per-asset leverage cap is the blocking item before real money. Paper-only until then. |
 | [Dual Momentum](strategies/dual_momentum/) | 0.66 | ⏸️ Validated, not traded | No alpha vs. SPY (p = 0.23) — it smooths the market rather than beating it. Significant against cash (p = 0.005), not against the benchmark that matters. **Not traded, on purpose:** if it can't beat buy-and-hold, the honest alternative is buy-and-hold. Kept as a documented negative result. |
 | [ORB (prop firm)](strategies/orb_prop_firm/) | — | ⚰️ Abandoned | Significant gross (t = 5.43) but the edge died after slippage + commissions (t → 1.45). A cost-discipline lesson, kept on purpose. |
+| [ORR (reversion)](strategies/orr_reversion/) | — | ⚰️ Abandoned | The mirror of ORB — *fade* the opening-range break instead of following it. Traced the failure from exit to signal in four stages; stripped to symmetric R:R (neutral skew), win rate is **48.6% over 3,411 trades** (SE ≈ 0.9%) — not distinguishable from a coin flip. No exit or filter rescues a signal with no edge. Together with ORB, both sides of the opening-range break are now tested: **it is noise in both directions.** |
 
 Research, not strategies: [portfolio construction](research/portfolio_construction/) — why risk allocation ≠ capital allocation, and what financing costs do to a levered risk-parity blend · [alternative data](research/alternative_data/) — COT positioning, credit spreads, yield-curve regime.
 
@@ -31,7 +32,7 @@ Every strategy clears the same hurdles before any capital — paper or real:
 6. **Implementability** — does a broker, an instrument and an account size exist that can actually carry the position the sizing math demands? A strategy can clear every statistical hurdle and still be untradeable. **TSMOM v2 fails this** (58× leverage); **v3 fixes it** with a per-asset cap and costs nothing.
 7. **Live validation** — paper trading catches pipeline bugs and tests discipline; the edge itself is validated only by *time*. At Sharpe 0.61 that means roughly a decade — paper trading proves the plumbing, not the alpha.
 
-Failures are documented, not hidden — see the post-mortem below and the abandoned ORB.
+Failures are documented, not hidden — see the post-mortem below and the abandoned ORB and ORR.
 
 ---
 
