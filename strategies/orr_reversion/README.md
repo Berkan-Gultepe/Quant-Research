@@ -68,11 +68,24 @@ into structural / forced-flow ideas (see research notes: structural-constraint c
 
 ---
 
+## Plots
+
+| Cumulative net P&L — it bleeds | Net P&L distribution — skew neutralized (+0.03) |
+|---|---|
+| <img src="plots/01_equity_curve.png" width="400"/> | <img src="plots/02_pnl_distribution.png" width="400"/> |
+
+**Four-stage diagnostic — tracing the failure from the exit to the signal:**
+
+<img src="plots/03_four_stage_diagnostic.png" width="820"/>
+
+---
+
 ## Files
 
 | File | Description |
 |------|-------------|
 | `orr_backtest.py` | Full backtest; four config flags reproduce the four diagnostic stages above |
+| `plots/` | Equity curve, P&L distribution (skew), and the four-stage diagnostic |
 
 ## Dependencies
 
