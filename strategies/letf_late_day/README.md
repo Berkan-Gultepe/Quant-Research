@@ -15,15 +15,15 @@ ORB and ORR were signals that were **noise from the start**. This is the opposit
 
 Leveraged **and** inverse ETFs must reset their leverage to the daily target every day. The re-balancing is **always in the same direction as the day's move**: on an up day they add exposure (buy), on a down day they cut it (sell). This forced flow lands near the close and, on large-move days, is a big share of market-on-close volume — Cheng & Madhavan (2009) report **16–75 % of MOC volume** for a 1–15 % move. So on big-move days the last half hour should **continue** the day's direction.
 
-| Parameter | Value |
-|-----------|-------|
-| Instrument | ES futures (Databento 1-min, front-month, RTH), 2010–2026, 4021 days |
-| Signal window | 09:30 → 15:30 ET (how the day moved) |
-| Trade window | 15:30 → 16:00 ET (the last half hour we try to capture) |
-| Universe | big-move days only — day's move in the extreme 10 % tails |
-| Direction | continuation — long big up-days, short big down-days |
-| Threshold | **expanding-window** 10/90 percentile, past days only, 252-day burn-in (**no look-ahead**) |
-| Cost | 1.3 ticks round-turn |
+| Parameter     | Value                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------ |
+| Instrument    | ES futures (Databento 1-min, front-month, RTH), 2010–2026, 4021 days                       |
+| Signal window | 09:30 → 15:30 ET (how the day moved)                                                       |
+| Trade window  | 15:30 → 16:00 ET (the last half hour we try to capture)                                    |
+| Universe      | big-move days only — day's move in the extreme 10 % tails                                  |
+| Direction     | continuation — long big up-days, short big down-days                                       |
+| Threshold     | **expanding-window** 10/90 percentile, past days only, 252-day burn-in (**no look-ahead**) |
+| Cost          | 1.3 ticks round-turn                                                                       |
 
 ---
 
