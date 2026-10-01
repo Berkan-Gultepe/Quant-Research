@@ -1,0 +1,321 @@
+#!/usr/bin/env python3
+"""
+pokemon_price_watch.py  (v2 - UVP-Restock-Waechter)
+---------------------------------------------------
+ZWECK: Meldung, wenn ein Pokemon-Produkt wieder ZUR UVP verfuegbar ist.
+
+Das ist NICHT dasselbe wie ein Rabatt-Waechter. Diese Produkte werden nicht
+reduziert - sie springen zwischen zwei Zustaenden:
+
+    Zustand A: Amazon hat Bestand      -> Preis = UVP
+    Zustand B: nur Drittanbieter da    -> Preis = 2x bis 4x UVP
+
+Du willst den Uebergang B -> A erwischen. Deshalb ist der Trigger ein
+ABSOLUTER Schwellwert (UVP + kleiner Puffer) und optional die Bedingung,
+dass Amazon selbst der Verkaeufer ist - nicht eine prozentuale Senkung.
+
+UVP-Referenz Deutschland (Stand 2026):
+    Einzelbooster ........  4,99 EUR
+    3er-Blister .......... 15,99 EUR
+    Booster-Bundle (6) ... 29,99 EUR
+    Tin-Box (4 Booster) .. 24,99 EUR
+    Mini-Tin ............. 10,99 EUR
+    Top-Trainer-Box ...... 52,99 EUR
+    18er-Display ......... 89,82 EUR
+
+Aufruf:
+    python3 pokemon_price_watch.py           # einmal pruefen (fuer cron)
+    python3 pokemon_price_watch.py --loop    # Dauerbetrieb
+
+Secrets als Umgebungsvariablen:
+    export KEEPA_KEY="..."
+    export TELEGRAM_TOKEN="..."
+    export TELEGRAM_CHAT_ID="..."
+"""
+
+import argparse
+import json
+import os
+import random
+import re
+import sys
+import time
+from datetime import datetime
+from pathlib import Path
+
+import requests
+from bs4 import BeautifulSoup
+
+# --------------------------------------------------------------------------
+# WATCHLIST
+#
+#   uvp          : offizielle UVP in EUR (siehe Tabelle oben)
+#   buffer_pct   : wieviel ueber UVP du noch akzeptierst. 10 = bis 10 % drueber.
+#   amazon_only  : True  -> nur melden, wenn AMAZON SELBST verkauft.
+#                           Das ist der eigentliche Restock-Indikator.
+#                   False -> jedes Angebot unter der Schwelle melden.
+#
+#   Der Schwellwert wird berechnet: uvp * (1 + buffer_pct/100)
+# --------------------------------------------------------------------------
+WATCHLIST = [
+    {
+        "name": "Erhabene Helden Boosterbundle (6 Packs)",
+        "source": "keepa",
+        "asin": "BITTE-ASIN-EINTRAGEN",
+        "uvp": 29.99,
+        "buffer_pct": 10,
+        "amazon_only": True,
+    },
+    {
+        "name": "Wachsendes Chaos Top-Trainer-Box",
+        "source": "keepa",
+        "asin": "BITTE-ASIN-EINTRAGEN",
+        "uvp": 52.99,
+        "buffer_pct": 10,
+        "amazon_only": True,
+    },
+    {
+        "name": "Wachsendes Chaos 36er Display (Fachhandel)",
+        "source": "html",
+        "url": "https://BEISPIEL-SHOP.de/pfad-zum-produkt",
+        "selector": ".product--price .price--content",
+        "uvp": 179.64,          # 36 x 4,99 - implizites UVP-Aequivalent
+        "buffer_pct": -15,      # negativ = du willst DEUTLICH darunter
+        "amazon_only": False,
+    },
+]
+
+STATE_FILE = Path(__file__).with_name("state.json")
+
+# Restocks halten oft nur Minuten. 45 Minuten Intervall verpasst sie.
+CHECK_INTERVAL_MIN = 8
+CHECK_JITTER_MIN = 4
+REQUEST_TIMEOUT = 20
+
+# Nach einem Alarm fuer dieses Produkt X Minuten Ruhe, damit du nicht
+# im Minutentakt dieselbe Meldung bekommst.
+ALERT_COOLDOWN_MIN = 180
+
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+)
+
+
+def threshold_for(item):
+    """Alarmschwelle aus UVP und Puffer."""
+    return round(item["uvp"] * (1 + item.get("buffer_pct", 0) / 100), 2)
+
+
+# --------------------------------------------------------------------------
+# Preis-Parsing
+# --------------------------------------------------------------------------
+def parse_price_de(text):
+    """'1.169,99 EUR' -> 1169.99 | '169,99' -> 169.99 | Muell -> None"""
+    if not text:
+        return None
+    cleaned = text.replace("\xa0", " ").strip()
+    m = re.search(r"(\d{1,3}(?:\.\d{3})*,\d{2})", cleaned)
+    if m:
+        return float(m.group(1).replace(".", "").replace(",", "."))
+    m = re.search(r"(\d+\.\d{2})", cleaned)
+    if m:
+        return float(m.group(1))
+    m = re.search(r"(\d+)", cleaned)
+    return float(m.group(1)) if m else None
+
+
+# --------------------------------------------------------------------------
+# Quelle 1: Amazon ueber Keepa-API
+# --------------------------------------------------------------------------
+def fetch_keepa(asin, api_key):
+    """
+    Liefert (preis, verkaeufer, fehler).
+
+    Keepa stats.current ist ein Array mit Preisen in CENT, -1 = kein Angebot.
+        Index 0  = Amazon selbst      <- der Restock-Indikator
+        Index 1  = Marketplace neu    <- meist die Scalper
+        Index 18 = Buy Box
+
+    Wir geben Amazon-Preis UND Buy-Box-Preis zurueck, damit die Alarmlogik
+    unterscheiden kann, WER da gerade verkauft.
+    """
+    r = requests.get(
+        "https://api.keepa.com/product",
+        params={"key": api_key, "domain": 3, "asin": asin, "stats": 1},
+        timeout=REQUEST_TIMEOUT,
+    )
+    r.raise_for_status()
+    data = r.json()
+
+    products = data.get("products") or []
+    if not products:
+        return None, None, "Keepa lieferte kein Produkt (ASIN falsch?)"
+
+    current = (products[0].get("stats") or {}).get("current") or []
+
+    def val(idx):
+        if idx < len(current) and current[idx] is not None and current[idx] > 0:
+            return current[idx] / 100.0
+        return None
+
+    amazon = val(0)
+    if amazon is not None:
+        return amazon, "Amazon", None
+
+    buybox = val(18) or val(1)
+    if buybox is not None:
+        return buybox, "Marketplace", None
+
+    return None, None, "kein aktives Angebot"
+
+
+# --------------------------------------------------------------------------
+# Quelle 2: beliebige Shop-Seite
+# --------------------------------------------------------------------------
+def fetch_html(url, selector):
+    """Liefert (preis, verkaeufer, fehler)."""
+    r = requests.get(
+        url,
+        headers={"User-Agent": USER_AGENT, "Accept-Language": "de-DE,de;q=0.9"},
+        timeout=REQUEST_TIMEOUT,
+    )
+    r.raise_for_status()
+    node = BeautifulSoup(r.text, "html.parser").select_one(selector)
+    if node is None:
+        return None, None, f"Selektor '{selector}' nicht gefunden (Layout geaendert?)"
+    price = parse_price_de(node.get_text(" ", strip=True))
+    if price is None:
+        return None, None, "Preis im Element nicht lesbar"
+    return price, "Shop", None
+
+
+# --------------------------------------------------------------------------
+# Meldung
+# --------------------------------------------------------------------------
+def notify(message):
+    token = os.environ.get("TELEGRAM_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    print(message, flush=True)
+    if not token or not chat_id:
+        return
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": message},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.RequestException as exc:
+        print(f"  ! Telegram fehlgeschlagen: {exc}", file=sys.stderr)
+
+
+# --------------------------------------------------------------------------
+# Zustand
+# --------------------------------------------------------------------------
+def load_state():
+    if STATE_FILE.exists():
+        try:
+            return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            print("! state.json defekt, starte neu", file=sys.stderr)
+    return {}
+
+
+def save_state(state):
+    STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
+# Ein Durchlauf
+# --------------------------------------------------------------------------
+def check_all():
+    keepa_key = os.environ.get("KEEPA_KEY")
+    state = load_state()
+    now = time.time()
+    stamp = datetime.now().strftime("%d.%m.%Y %H:%M")
+    print(f"--- Durchlauf {stamp} ---")
+
+    for item in WATCHLIST:
+        name = item["name"]
+        key = item.get("asin") or item.get("url")
+        prev = state.get(key, {})
+        limit = threshold_for(item)
+
+        try:
+            if item["source"] == "keepa":
+                if not keepa_key:
+                    print(f"  {name}: uebersprungen (KEEPA_KEY nicht gesetzt)")
+                    continue
+                price, seller, err = fetch_keepa(item["asin"], keepa_key)
+            elif item["source"] == "html":
+                price, seller, err = fetch_html(item["url"], item["selector"])
+            else:
+                price, seller, err = None, None, f"unbekannte Quelle '{item['source']}'"
+        except requests.RequestException as exc:
+            price, seller, err = None, None, f"Netzwerkfehler: {exc}"
+
+        if price is None:
+            print(f"  {name}: kein Preis ({err})")
+            continue
+
+        ratio = price / item["uvp"]
+        print(f"  {name}: {price:.2f} EUR [{seller}] "
+              f"= {ratio:.2f}x UVP | Schwelle {limit:.2f}")
+
+        # --- Alarmbedingungen ---
+        under_limit = price <= limit
+        seller_ok = (not item.get("amazon_only")) or seller in ("Amazon", "Shop")
+        cooled = (now - prev.get("last_alert_ts", 0)) > ALERT_COOLDOWN_MIN * 60
+
+        if under_limit and seller_ok and cooled:
+            link = item.get("url") or f"https://www.amazon.de/dp/{item.get('asin')}"
+            notify(
+                "RESTOCK ZUR UVP\n"
+                f"{name}\n"
+                f"{price:.2f} EUR  ({ratio:.2f}x UVP von {item['uvp']:.2f})\n"
+                f"Verkaeufer: {seller}\n"
+                f"{link}"
+            )
+            prev["last_alert_ts"] = now
+            prev["last_alert_price"] = price
+        elif under_limit and not seller_ok:
+            print("    -> unter Schwelle, aber nicht Amazon: kein Alarm")
+
+        prev["last_price"] = price
+        prev["last_seller"] = seller
+        prev["checked"] = stamp
+        state[key] = prev
+
+    save_state(state)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="UVP-Restock-Waechter fuer Pokemon-Produkte")
+    ap.add_argument("--loop", action="store_true", help="Dauerbetrieb statt Einzeldurchlauf")
+    ap.add_argument("--dry-run", action="store_true", help="nur Schwellwerte zeigen, nichts abrufen")
+    args = ap.parse_args()
+
+    if args.dry_run:
+        print("Berechnete Alarmschwellen:")
+        for it in WATCHLIST:
+            print(f"  {it['name']}: UVP {it['uvp']:.2f} "
+                  f"+ {it.get('buffer_pct', 0)}% -> {threshold_for(it):.2f} EUR "
+                  f"| amazon_only={it.get('amazon_only', False)}")
+        return
+
+    if not args.loop:
+        check_all()
+        return
+
+    while True:
+        try:
+            check_all()
+        except Exception as exc:
+            print(f"! Durchlauf fehlgeschlagen: {exc}", file=sys.stderr)
+        wait = (CHECK_INTERVAL_MIN + random.uniform(0, CHECK_JITTER_MIN)) * 60
+        print(f"  naechster Durchlauf in {wait/60:.0f} min\n", flush=True)
+        time.sleep(wait)
+
+
+if __name__ == "__main__":
+    main()
